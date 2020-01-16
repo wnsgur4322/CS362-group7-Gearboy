@@ -6,7 +6,7 @@
 - Junhyeok Jeong (Derek), jeongju@oregonstate.edu
 
 # Note
--- Compile method
+Compile method
 ./Gearboy [game]
 
 For example, pokemon game
