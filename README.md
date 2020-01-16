@@ -1,12 +1,12 @@
--- Team Name: Beep Boop
--- Team Members
-Ethan Mendelson, mendelse@oregonstate.edu
-Chase Kozol, kozolc@oregonstate.edu
-Youngjoo Lee (Joon), leey3@oregonstate.edu
-Junhyeok Jeong (Derek), jeongju@oregonstate.edu
+# Team Name: Beep Boop
+# Team Members
+- Ethan Mendelson, mendelse@oregonstate.edu
+- Chase Kozol, kozolc@oregonstate.edu
+- Youngjoo Lee (Joon), leey3@oregonstate.edu
+- Junhyeok Jeong (Derek), jeongju@oregonstate.edu
 
--- Note
---- compile method
+# Note
+-- Compile method
 ./Gearboy [game]
 
 For example, pokemon game
