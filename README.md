@@ -7,10 +7,10 @@
 
 # Note
 Compile method
-./Gearboy [game]
+- ./Gearboy [game]
 
 For example, pokemon game
-./Gearboy 'Pokemon Red.gb'
+- ./Gearboy 'Pokemon Red.gb'
 
 
 Gearboy
