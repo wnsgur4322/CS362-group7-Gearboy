@@ -1,22 +1,3 @@
-/*
- * Gearboy - Nintendo Game Boy Emulator
- * Copyright (C) 2012  Ignacio Sanchez
-
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * any later version.
-
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
-
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see http://www.gnu.org/licenses/
- *
- */
-
 #include <string>
 #include <algorithm>
 #include <ctype.h>
@@ -25,6 +6,12 @@
 
 Cartridge::Cartridge()
 {
+    // Compare with InitiPointer() function, SafeDeleteArray 
+    // and InitPointer are almost same like below:
+    // #define SafeDeleteArray(pointer) if(pointer != NULL) {delete [] pointer; pointer = NULL;}
+    // #define InitPointer(pointer) ((pointer) = NULL)
+    // Thus, it doesn't need both function to minimize the code.
+    // Suggestion: Delete InitPointer function, and use only SafeDeleteArray.
     InitPointer(m_pTheROM);
     m_iTotalSize = 0;
     m_szName[0] = 0;
@@ -79,224 +66,6 @@ void Cartridge::Reset()
     m_iROMBankCount = 0;
     m_GameGenieList.clear();
 }
-
-bool Cartridge::IsValidROM() const
-{
-    return m_bValidROM;
-}
-
-bool Cartridge::IsLoadedROM() const
-{
-    return m_bLoaded;
-}
-
-Cartridge::CartridgeTypes Cartridge::GetType() const
-{
-    return m_Type;
-}
-
-int Cartridge::GetRAMSize() const
-{
-    return m_iRAMSize;
-}
-
-int Cartridge::GetROMSize() const
-{
-    return m_iROMSize;
-}
-
-int Cartridge::GetRAMBankCount() const
-{
-    return m_iRAMBankCount;
-}
-
-int Cartridge::GetROMBankCount() const
-{
-    return m_iROMBankCount;
-}
-
-const char* Cartridge::GetName() const
-{
-    return m_szName;
-}
-
-const char* Cartridge::GetFilePath() const
-{
-    return m_szFilePath;
-}
-
-const char* Cartridge::GetFileName() const
-{
-    return m_szFileName;
-}
-
-int Cartridge::GetTotalSize() const
-{
-    return m_iTotalSize;
-}
-
-bool Cartridge::HasBattery() const
-{
-    return m_bBattery;
-}
-
-u8* Cartridge::GetTheROM() const
-{
-    return m_pTheROM;
-}
-
-bool Cartridge::LoadFromZipFile(const u8* buffer, int size)
-{
-    using namespace std;
-
-    mz_zip_archive zip_archive;
-    mz_bool status;
-    memset(&zip_archive, 0, sizeof (zip_archive));
-
-    status = mz_zip_reader_init_mem(&zip_archive, (void*) buffer, size, 0);
-    if (!status)
-    {
-        Log("mz_zip_reader_init_mem() failed!");
-        return false;
-    }
-
-    for (unsigned int i = 0; i < mz_zip_reader_get_num_files(&zip_archive); i++)
-    {
-        mz_zip_archive_file_stat file_stat;
-        if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat))
-        {
-            Log("mz_zip_reader_file_stat() failed!");
-            mz_zip_reader_end(&zip_archive);
-            return false;
-        }
-
-        Log("ZIP Content - Filename: \"%s\", Comment: \"%s\", Uncompressed size: %u, Compressed size: %u", file_stat.m_filename, file_stat.m_comment, (unsigned int) file_stat.m_uncomp_size, (unsigned int) file_stat.m_comp_size);
-
-        string fn((const char*) file_stat.m_filename);
-        transform(fn.begin(), fn.end(), fn.begin(), (int(*)(int)) tolower);
-        string extension = fn.substr(fn.find_last_of(".") + 1);
-
-        if ((extension == "gb") || (extension == "dmg") || (extension == "gbc") || (extension == "cgb") || (extension == "sgb"))
-        {
-            void *p;
-            size_t uncomp_size;
-
-            p = mz_zip_reader_extract_file_to_heap(&zip_archive, file_stat.m_filename, &uncomp_size, 0);
-            if (!p)
-            {
-                Log("mz_zip_reader_extract_file_to_heap() failed!");
-                mz_zip_reader_end(&zip_archive);
-                return false;
-            }
-
-            bool ok = LoadFromBuffer((const u8*) p, static_cast<int>(uncomp_size));
-
-            free(p);
-            mz_zip_reader_end(&zip_archive);
-
-            return ok;
-        }
-    }
-    return false;
-}
-
-bool Cartridge::LoadFromFile(const char* path)
-{
-    using namespace std;
-
-    Log("Loading %s...", path);
-
-    Reset();
-
-    strcpy(m_szFilePath, path);
-
-    std::string pathstr(path);
-    std::string filename;
-
-    size_t pos = pathstr.find_last_of("\\");
-    if (pos != std::string::npos)
-    {
-        filename.assign(pathstr.begin() + pos + 1, pathstr.end());
-    }
-    else
-    {
-        pos = pathstr.find_last_of("/");
-        if (pos != std::string::npos)
-        {
-            filename.assign(pathstr.begin() + pos + 1, pathstr.end());
-        }
-        else
-        {
-            filename = pathstr;
-        }
-    }
-
-    strcpy(m_szFileName, filename.c_str());
-
-    ifstream file(path, ios::in | ios::binary | ios::ate);
-
-    if (file.is_open())
-    {
-        int size = static_cast<int> (file.tellg());
-        char* memblock = new char[size];
-        file.seekg(0, ios::beg);
-        file.read(memblock, size);
-        file.close();
-
-        string fn(path);
-        transform(fn.begin(), fn.end(), fn.begin(), (int(*)(int)) tolower);
-        string extension = fn.substr(fn.find_last_of(".") + 1);
-
-        if (extension == "zip")
-        {
-            Log("Loading from ZIP...");
-            m_bLoaded = LoadFromZipFile(reinterpret_cast<u8*> (memblock), size);
-        }
-        else
-        {
-            m_bLoaded = LoadFromBuffer(reinterpret_cast<u8*> (memblock), size);
-        }
-
-        if (m_bLoaded)
-        {
-            Log("ROM loaded", path);
-        }
-        else
-        {
-            Log("There was a problem loading the memory for file %s...", path);
-        }
-
-        SafeDeleteArray(memblock);
-    }
-    else
-    {
-        Log("There was a problem loading the file %s...", path);
-        m_bLoaded = false;
-    }
-
-    if (!m_bLoaded)
-    {
-        Reset();
-    }
-
-    return m_bLoaded;
-}
-
-bool Cartridge::LoadFromBuffer(const u8* buffer, int size)
-{
-    if (IsValidPointer(buffer))
-    {
-        Log("Loading from buffer... Size: %d", size);
-        m_iTotalSize = size;
-        m_pTheROM = new u8[m_iTotalSize];
-        memcpy(m_pTheROM, buffer, m_iTotalSize);
-        m_bLoaded = true;
-        return GatherMetadata();
-    }
-    else
-        return false;
-}
-
 void Cartridge::CheckCartridgeType(int type)
 {
     if ((type != 0xEA) && (GetROMSize() == 0))
@@ -305,6 +74,9 @@ void Cartridge::CheckCartridgeType(int type)
     switch (type)
     {
         case 0x00:
+            m_Type = CartridgeNoMBC; // Because of not setting type (CartridgeNoMBC), some of games like NoMapper cartridge don't work in the emulator
+                                     // Set the type of Cartrdige, No mapper games which have type = 0x00 work.
+            break;
             // NO MBC
         case 0x08:
             // ROM
@@ -390,6 +162,11 @@ void Cartridge::CheckCartridgeType(int type)
             // MMM01
             // SRAM
             // BATT
+            m_Type = CartridgeMBC1Multi; // Accoridng to Memory Bank Controller from WIkipedia 
+                                         //(https://gbdev.gg8.se/wiki/articles/Memory_Bank_Controllers#MBC5_.28max_8MByte_ROM_and.2For_128KByte_RAM.29)
+                                         // MMM01 similar to MBC1Multicart, so I tried to set MMM01 to MBC1Multi, and I checked it works with MBC1Multi.
+                                         // Therefore, the emulator supports MMM01 games now.
+            break;
         case 0x15:
             // MBC4
         case 0x16:
@@ -400,6 +177,10 @@ void Cartridge::CheckCartridgeType(int type)
             // SRAM
             // BATT
         case 0x22:
+            m_Type = CartridgeMBC5; // MBC7 supports almost similar memory size of MBC5(but Ram size is different (MBC5: A000~AFFF / MBC7 : A000~BFFF)
+                                    // However, except RAM size, it has similar memory system, so MBC7 games works with MBC5 memory system
+                                    // Therefore, set MBC5 instead, the emulator supports MBC7 games which didnt' support before.
+            break;
             // MBC7
             // BATT
             // SRAM
@@ -461,103 +242,6 @@ void Cartridge::CheckCartridgeType(int type)
             m_bRumblePresent = false;
     }
 }
-
-int Cartridge::GetVersion() const
-{
-    return m_iVersion;
-}
-
-bool Cartridge::IsSGB() const
-{
-    return m_bSGB;
-}
-
-bool Cartridge::IsCGB() const
-{
-    return m_bCGB;
-}
-
-void Cartridge::UpdateCurrentRTC()
-{
-    time(&m_RTCCurrentTime);
-}
-
-time_t Cartridge::GetCurrentRTC()
-{
-    return m_RTCCurrentTime;
-}
-
-bool Cartridge::IsRTCPresent() const
-{
-    return m_bRTCPresent;
-}
-
-bool Cartridge::IsRumblePresent() const
-{
-    return m_bRumblePresent;
-}
-
-void Cartridge::SetGameGenieCheat(const char* szCheat)
-{
-    std::string code(szCheat);
-    for (std::string::iterator p = code.begin(); code.end() != p; ++p)
-        *p = toupper(*p);
-
-    if (m_bLoaded && (code.length() > 6) && ((code[3] < '0') || ((code[3] > '9') && (code[3] < 'A'))))
-    {
-        u8 new_value = (AsHex(code[0]) << 4 | AsHex(code[1])) & 0xFF;
-        u16 cheat_address = (AsHex(code[2]) << 8 | AsHex(code[4]) << 4 | AsHex(code[5]) | (AsHex(code[6]) ^ 0xF) << 12) & 0x7FFF;
-        bool avoid_compare = true;
-        u8 compare_value = 0;
-
-        if ((code.length() == 11) && ((code[7] < '0') || ((code[7] > '9') && (code[7] < 'A'))))
-        {
-            compare_value = (AsHex(code[8]) << 4 | AsHex(code[10])) ^ 0xFF;
-            compare_value = ((compare_value >> 2 | compare_value << 6) ^ 0x45) & 0xFF;
-            avoid_compare = false;
-        }
-
-        for (int bank = 0; bank < GetROMBankCount(); bank++)
-        {
-            int bank_address = (bank * 0x4000) + (cheat_address & 0x3FFF);
-
-            if (avoid_compare || (m_pTheROM[bank_address] == compare_value))
-            {
-                GameGenieCode undo_data;
-                undo_data.address = bank_address;
-                undo_data.old_value = m_pTheROM[bank_address];
-
-                m_pTheROM[bank_address] = new_value;
-
-                m_GameGenieList.push_back(undo_data);
-            }
-        }
-    }
-}
-
-void Cartridge::ClearGameGenieCheats()
-{
-    std::list<GameGenieCode>::iterator it;
-
-    for (it = m_GameGenieList.begin(); it != m_GameGenieList.end(); it++)
-    {
-        m_pTheROM[it->address] = it->old_value;
-    }
-
-    m_GameGenieList.clear();
-}
-
-unsigned int Cartridge::Pow2Ceil(unsigned int n)
-{
-    --n;
-    n |= n >> 1;
-    n |= n >> 2;
-    n |= n >> 4;
-    n |= n >> 8;
-    ++n;
-    return n;
-}
-
 bool Cartridge::GatherMetadata()
 {
     char name[12] = {0};
@@ -583,6 +267,16 @@ bool Cartridge::GatherMetadata()
     m_iVersion = m_pTheROM[0x14C];
 
     CheckCartridgeType(type);
+    // If the catrdige type is invailed, it doesn't need to do 
+    // below switches after CheckCartridgeType funtion
+    // because this function changes m_Type as CartridgeNotSupported 
+    // which just return false at the end of Cartridge::GatherMetadata()
+    // Threfore, after CheckCatrdiegeType, if m_Type = CartridgeNotSupported, 
+    // then it should return false right after the function
+    // because if it's in switchs, it's possible to occur error 
+    // becasue of keeping using invailed cartridge type for switches.
+    // Suggestion: CheckCartridgeType(type); ====> 
+    //             if (CheckCartridgeType(type) == CartridgeNotSupported) { return false; }
 
     switch (m_iRAMSize)
     {
