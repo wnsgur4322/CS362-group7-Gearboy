@@ -55,13 +55,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
 
     QObject::connect(m_pUI->menuGame_Boy, SIGNAL(aboutToShow()), this, SLOT(MenuGameBoyPressed()));
-    QObject::connect(m_pUI->menuGame_Boy, SIGNAL(aboutToHide()), this, SLOT(MenuGameBoyReleased()));
+    QObject::connect(m_pUI->menuGame_Boy, SIGNAL(aboutToShow()), this, SLOT(MenuGameBoyReleased()));
     QObject::connect(m_pUI->menuDebug, SIGNAL(aboutToShow()), this, SLOT(MenuDebugPressed()));
-    QObject::connect(m_pUI->menuDebug, SIGNAL(aboutToHide()), this, SLOT(MenuDebugReleased()));
+    QObject::connect(m_pUI->menuDebug, SIGNAL(aboutToShow()), this, SLOT(MenuDebugReleased()));
     QObject::connect(m_pUI->menuSettings, SIGNAL(aboutToShow()), this, SLOT(MenuSettingsPressed()));
-    QObject::connect(m_pUI->menuSettings, SIGNAL(aboutToHide()), this, SLOT(MenuSettingsReleased()));
+    QObject::connect(m_pUI->menuSettings, SIGNAL(aboutToShow()), this, SLOT(MenuSettingsReleased()));
     QObject::connect(m_pUI->menuHelp, SIGNAL(aboutToShow()), this, SLOT(MenuAboutPressed()));
-    QObject::connect(m_pUI->menuHelp, SIGNAL(aboutToHide()), this, SLOT(MenuAboutReleased()));
+    QObject::connect(m_pUI->menuHelp, SIGNAL(aboutToShow()), this, SLOT(MenuAboutReleased()));
 
     m_pUI->actionX_1->setData(1);
     m_pUI->actionX_2->setData(2);
@@ -95,7 +95,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     m_pAbout = new About();
 
     QPalette pal = this->palette();
-    pal.setColor(this->backgroundRole(), Qt::black);
+    pal.setColor(this->backgroundRole(), Qt::white);
     this->setPalette(pal);
 
     LoadSettings();
@@ -246,15 +246,15 @@ void MainWindow::MenuSettingsFullscreen()
         this->setMinimumSize(0, 0);
         this->showFullScreen();
 
-        m_pUI->menubar->hide();
+        m_pUI->menubar->show();
 
         int w = qApp->desktop()->size().width();
         int h = qApp->desktop()->size().height();
 
         int factor = h / GAMEBOY_HEIGHT;
 
-        m_pGLFrame->setMaximumSize(GAMEBOY_WIDTH * factor, GAMEBOY_HEIGHT * factor);
-        m_pGLFrame->setMinimumSize(GAMEBOY_WIDTH * factor, GAMEBOY_HEIGHT * factor);
+        m_pGLFrame->setMaximumSize(GAMEBOY_WIDTH * factor , GAMEBOY_HEIGHT * factor);
+        m_pGLFrame->setMinimumSize(GAMEBOY_WIDTH * factor * 1.72 , GAMEBOY_HEIGHT * factor * 1.2);
 
         int move_x = (w - (GAMEBOY_WIDTH * factor)) / 2;
         int move_y = (h - (GAMEBOY_HEIGHT * factor)) / 2;

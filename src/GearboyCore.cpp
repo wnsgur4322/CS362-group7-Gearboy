@@ -33,6 +33,7 @@
 #include "MBC3MemoryRule.h"
 #include "MBC5MemoryRule.h"
 #include "MultiMBC1MemoryRule.h"
+#include "stdio.h"
 
 GearboyCore::GearboyCore()
 {
@@ -408,7 +409,7 @@ void GearboyCore::SaveState(int index)
 
 void GearboyCore::SaveState(const char* szPath, int index)
 {
-    Log("Creating save state...");
+    printf("Creating save state...");
 
     using namespace std;
 
@@ -438,13 +439,13 @@ void GearboyCore::SaveState(const char* szPath, int index)
     std::stringstream sstm;
     sstm << path << index;
 
-    Log("Save state file: %s", sstm.str().c_str());
+    printf("Save state file: %s", sstm.str().c_str());
 
     ofstream file(sstm.str().c_str(), ios::out | ios::binary);
 
     SaveState(file, size);
 
-    Log("Save state file created");
+    printf("Save state file created\n");
 
     SafeDeleteArray(buffer);
 }
@@ -452,6 +453,7 @@ void GearboyCore::SaveState(const char* szPath, int index)
 bool GearboyCore::SaveState(u8* buffer, size_t& size)
 {
     bool ret = false;
+    printf("buffer: %d, size: %d", buffer, size);
 
     if (m_pCartridge->IsLoadedROM() && IsValidPointer(m_pMemory->GetCurrentRule()))
     {
@@ -464,14 +466,14 @@ bool GearboyCore::SaveState(u8* buffer, size_t& size)
 
         if (IsValidPointer(buffer))
         {
-            Log("Saving state to buffer [%d bytes]...", size);
+            printf("Saving state to buffer [%d bytes]...", size);
             memcpy(buffer, stream.str().c_str(), size);
             ret = true;
         }
     }
     else
     {
-        Log("Invalid rom or memory rule.");
+        printf("Invalid rom or memory rule.");
     }
 
     return ret;
@@ -481,7 +483,7 @@ bool GearboyCore::SaveState(std::ostream& stream, size_t& size)
 {
     if (m_pCartridge->IsLoadedROM() && IsValidPointer(m_pMemory->GetCurrentRule()))
     {
-        Log("Gathering save state data...");
+        printf("Gathering save state data...\n");
 
         using namespace std;
 
@@ -519,7 +521,7 @@ void GearboyCore::LoadState(int index)
 
 void GearboyCore::LoadState(const char* szPath, int index)
 {
-    Log("Loading save state...");
+    printf("Loading save state...\n");
 
     using namespace std;
 
@@ -547,7 +549,7 @@ void GearboyCore::LoadState(const char* szPath, int index)
     std::stringstream sstm;
     sstm << sav_path << index;
 
-    Log("Opening save file: %s", sstm.str().c_str());
+    printf("Opening save file: %s", sstm.str().c_str());
 
     ifstream file;
 
@@ -557,12 +559,12 @@ void GearboyCore::LoadState(const char* szPath, int index)
     {
         if (LoadState(file))
         {
-            Log("Save state loaded");
+            printf("Save state loaded\n");
         }
     }
     else
     {
-        Log("Save state file doesn't exist");
+        printf("Save state file doesn't exist\n");
     }
 }
 
@@ -570,7 +572,7 @@ bool GearboyCore::LoadState(const u8* buffer, size_t size)
 {
     if (m_pCartridge->IsLoadedROM() && IsValidPointer(m_pMemory->GetCurrentRule()) && (size > 0) && IsValidPointer(buffer))
     {
-        Log("Gathering load state data [%d bytes]...", size);
+        printf("Gathering load state data [%d bytes]...", size);
 
         using namespace std;
 
@@ -581,7 +583,7 @@ bool GearboyCore::LoadState(const u8* buffer, size_t size)
         return LoadState(stream);
     }
 
-    Log("Invalid rom or memory rule.");
+    printf("Invalid rom or memory rule.");
 
     return false;
 }
@@ -598,7 +600,7 @@ bool GearboyCore::LoadState(std::istream& stream)
         stream.seekg(0, ios::end);
         size_t size = static_cast<size_t>(stream.tellg());
 
-        Log("Load state stream size: %d", size);
+        printf("Load state stream size: %d", size);
 
         stream.seekg(size - (2 * sizeof(u32)), ios::beg);
         stream.read(reinterpret_cast<char*> (&header_magic), sizeof(header_magic));
@@ -623,12 +625,12 @@ bool GearboyCore::LoadState(std::istream& stream)
         }
         else
         {
-            Log("Invalid save state size");
+            printf("Invalid save state size");
         }
     }
     else
     {
-        Log("Invalid rom or memory rule");
+        printf("Invalid rom or memory rule");
     }
 
     return false;
